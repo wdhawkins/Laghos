@@ -71,7 +71,7 @@ endif
 TEST_MK = $(MFEM_TEST_MK)
 
 # Caliper install directory
-CALIPER_DIR := "../caliper"
+CALIPER_DIR ?= "../caliper"
 CALIPER_INCLUDE :=
 CALIPER_LIBS :=
 CALIPER_FLAGS :=
