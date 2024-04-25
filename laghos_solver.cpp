@@ -289,8 +289,6 @@ LagrangianHydroOperator::LagrangianHydroOperator(const int size,
 
 LagrangianHydroOperator::~LagrangianHydroOperator()
 {
-   CALI_CXX_MARK_FUNCTION;
-
    delete qupdate;
    if (p_assembly)
    {
@@ -489,8 +487,6 @@ void LagrangianHydroOperator::SolveEnergy(const Vector &S, const Vector &v,
 
 void LagrangianHydroOperator::UpdateMesh(const Vector &S) const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    Vector* sptr = const_cast<Vector*>(&S);
    x_gf.MakeRef(&H1, *sptr, 0);
    H1.GetParMesh()->NewNodes(x_gf, false);
@@ -498,8 +494,6 @@ void LagrangianHydroOperator::UpdateMesh(const Vector &S) const
 
 double LagrangianHydroOperator::GetTimeStepEstimate(const Vector &S) const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    UpdateMesh(S);
    UpdateQuadratureData(S);
    double glob_dt_est;
@@ -510,8 +504,6 @@ double LagrangianHydroOperator::GetTimeStepEstimate(const Vector &S) const
 
 void LagrangianHydroOperator::ResetTimeStepEstimate() const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    qdata.dt_est = std::numeric_limits<double>::infinity();
 }
 
@@ -767,8 +759,6 @@ void LagrangianHydroOperator::PrintTimingData(bool IamRoot, int steps,
 // Smooth transition between 0 and 1 for x in [-eps, eps].
 MFEM_HOST_DEVICE inline double smooth_step_01(double x, double eps)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    const double y = (x + eps) / (2.0 * eps);
    if (y < 0.0) { return 0.0; }
    if (y > 1.0) { return 1.0; }
@@ -958,8 +948,6 @@ template<int H, int W, typename T>
 MFEM_HOST_DEVICE inline
 double Trace(const T * __restrict__ data)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    double t = 0.0;
    for (int i = 0; i < W; i++) { t += data[i+i*H]; }
    return t;
@@ -1007,8 +995,6 @@ template<int H, int W, typename T>
 MFEM_HOST_DEVICE inline
 double FNorm(const T * __restrict__ data)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    double s, n2;
    SFNorm<H,W>(s, n2, data);
    return s*sqrt(n2);
@@ -1390,8 +1376,6 @@ void QUpdate::UpdateQuadratureData(const Vector &S, QuadratureData &qdata)
 
 void LagrangianHydroOperator::AssembleForceMatrix() const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    if (forcemat_is_assembled || p_assembly) { return; }
    Force = 0.0;
    timer.sw_force.Start();
@@ -1404,8 +1388,6 @@ void LagrangianHydroOperator::AssembleForceMatrix() const
 
 void HydroODESolver::Init(TimeDependentOperator &tdop)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    ODESolver::Init(tdop);
    hydro_oper = dynamic_cast<hydrodynamics::LagrangianHydroOperator *>(f);
    MFEM_VERIFY(hydro_oper, "HydroSolvers expect LagrangianHydroOperator.");
@@ -1413,8 +1395,6 @@ void HydroODESolver::Init(TimeDependentOperator &tdop)
 
 void RK2AvgSolver::Init(TimeDependentOperator &tdop)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    HydroODESolver::Init(tdop);
    const Array<int> &block_offsets = hydro_oper->GetBlockOffsets();
    V.SetSize(block_offsets[1], mem_type);
