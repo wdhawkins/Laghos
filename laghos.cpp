@@ -693,13 +693,10 @@ int main(int argc, char *argv[])
 
       // S is the vector of dofs, t is the current time, and dt is the time step
       // to advance.
-      CALI_MARK_BEGIN("ODE solver");
       ode_solver->Step(S, t, dt);
-      CALI_MARK_END("ODE solver");
       steps++;
 
       // Adaptive time step control.
-      CALI_MARK_BEGIN("Adaptive time step");
       const double dt_est = hydro.GetTimeStepEstimate(S);
       if (dt_est < dt)
       {
@@ -716,7 +713,6 @@ int main(int argc, char *argv[])
          ti--; continue;
       }
       else if (dt_est > 1.25 * dt) { dt *= 1.02; }
-      CALI_MARK_END("Adaptive time step");
 
       // Ensure the sub-vectors x_gf, v_gf, and e_gf know the location of the
       // data in S. This operation simply updates the Memory validity flags of
@@ -730,7 +726,6 @@ int main(int argc, char *argv[])
       // and the oper object might have redirected the mesh positions to those.
       pmesh->NewNodes(x_gf, false);
 
-      CALI_MARK_BEGIN("Report/Visualization");
       if (last_step || (ti % vis_steps) == 0)
       {
          double lnorm = e_gf * e_gf, norm;
@@ -845,7 +840,6 @@ int main(int argc, char *argv[])
          MFEM_VERIFY(dim==2 || dim==3, "check: dimension");
          Checks(ti, e_norm, checks);
       }
-      CALI_MARK_END("Report/Visualization");
    }
    CALI_MARK_END("Time step loop");
    MFEM_VERIFY(!check || checks == 2, "Check error!");

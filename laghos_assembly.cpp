@@ -30,8 +30,6 @@ void DensityIntegrator::AssembleRHSElementVect(const FiniteElement &fe,
                                                ElementTransformation &Tr,
                                                Vector &elvect)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    const int nqp = IntRule->GetNPoints();
    Vector shape(fe.GetDof());
    elvect.SetSize(fe.GetDof());
@@ -96,8 +94,6 @@ MassPAOperator::MassPAOperator(ParFiniteElementSpace &pfes,
    ess_tdofs_count(0),
    ess_tdofs(0)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    pabf.SetAssemblyLevel(AssemblyLevel::PARTIAL);
    pabf.AddDomainIntegrator(new mfem::MassIntegrator(Q, &ir));
    pabf.Assemble();
@@ -106,8 +102,6 @@ MassPAOperator::MassPAOperator(ParFiniteElementSpace &pfes,
 
 void MassPAOperator::SetEssentialTrueDofs(Array<int> &dofs)
 {
-   CALI_CXX_MARK_FUNCTION;
-
    ess_tdofs_count = dofs.Size();
    if (ess_tdofs.Size() == 0)
    {
@@ -122,15 +116,11 @@ void MassPAOperator::SetEssentialTrueDofs(Array<int> &dofs)
 
 void MassPAOperator::EliminateRHS(Vector &b) const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    if (ess_tdofs_count > 0) { b.SetSubVector(ess_tdofs, 0.0); }
 }
 
 void MassPAOperator::Mult(const Vector &x, Vector &y) const
 {
-   CALI_CXX_MARK_FUNCTION;
-
    mass->Mult(x, y);
    if (ess_tdofs_count > 0) { y.SetSubVector(ess_tdofs, 0.0); }
 }
