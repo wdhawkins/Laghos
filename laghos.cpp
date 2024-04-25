@@ -63,6 +63,10 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include "laghos_solver.hpp"
+#ifdef USE_CALIPER
+#include "caliper/cali-manager.h"
+#include "caliper/cali.h"
+#endif
 
 using std::cout;
 using std::endl;
@@ -124,6 +128,10 @@ int main(int argc, char *argv[])
    int dev = 0;
    double blast_energy = 0.25;
    double blast_position[] = {0.0, 0.0, 0.0};
+#ifdef USE_CALIPER
+   bool caliper = false;
+   const char *caliper_config = "runtime-report";
+#endif
 
    OptionsParser args(argc, argv);
    args.AddOption(&dim, "-dim", "--dimension", "Dimension of the problem.");
@@ -193,6 +201,12 @@ int main(int argc, char *argv[])
    args.AddOption(&gpu_aware_mpi, "-gam", "--gpu-aware-mpi", "-no-gam",
                   "--no-gpu-aware-mpi", "Enable GPU aware MPI communications.");
    args.AddOption(&dev, "-dev", "--dev", "GPU device to use.");
+#ifdef USE_CALIPER
+   args.AddOption(&caliper, "-caliper", "--caliper", "-no-caliper", "--no-caliper",
+                  "Enable or disable Caliper measurement and reporting.");
+   args.AddOption(&caliper_config, "-caliper-config", "--caliper-config",
+                  "User-supplied Caliper configuration");
+#endif
    args.Parse();
    if (!args.Good())
    {
@@ -201,6 +215,30 @@ int main(int argc, char *argv[])
    }
    if (Mpi::Root()) { args.PrintOptions(cout); }
 
+#ifdef USE_CALIPER
+   // Configure Caliper from the command line options
+   cali::ConfigManager *cali_mgr = nullptr;
+   if (caliper)
+   {
+      cali_mgr = new cali::ConfigManager;
+      cali_mgr->add(caliper_config);
+      if (cali_mgr->error())
+      {
+         if (Mpi::Root())
+         {
+           cout << "Invalid Caliper configuration: " << caliper_config << '\n';
+         }
+         delete cali_mgr;
+         MPI_Finalize();
+         return 3;
+      }
+      cali_mgr->start(); 
+   }
+#endif
+
+   CALI_MARK_BEGIN("Simulation");
+
+   CALI_MARK_BEGIN("Setup");
    // Configure the device from the command line options
    Device backend;
    backend.Configure(device, dev);
@@ -355,6 +393,7 @@ int main(int argc, char *argv[])
             cout << "Unknown partition type: " << partition_type << '\n';
          }
          delete mesh;
+         delete cali_mgr;
          MPI_Finalize();
          return 3;
    }
@@ -448,6 +487,7 @@ int main(int argc, char *argv[])
             cout << "Unknown ODE solver type: " << ode_solver_type << '\n';
          }
          delete pmesh;
+         delete cali_mgr;
          MPI_Finalize();
          return 3;
    }
@@ -559,6 +599,7 @@ int main(int argc, char *argv[])
                                                 visc, vorticity, p_assembly,
                                                 cg_tol, cg_max_iter, ftz_tol,
                                                 order_q);
+   CALI_MARK_END("Setup");
 
    socketstream vis_rho, vis_v, vis_e;
    char vishost[] = "localhost";
@@ -637,6 +678,7 @@ int main(int argc, char *argv[])
    //      }
    //      cout << endl;
    //   }
+   CALI_MARK_BEGIN("Time step loop");
    for (int ti = 1; !last_step; ti++)
    {
       if (t + dt >= t_final)
@@ -651,10 +693,13 @@ int main(int argc, char *argv[])
 
       // S is the vector of dofs, t is the current time, and dt is the time step
       // to advance.
+      CALI_MARK_BEGIN("ODE solver");
       ode_solver->Step(S, t, dt);
+      CALI_MARK_END("ODE solver");
       steps++;
 
       // Adaptive time step control.
+      CALI_MARK_BEGIN("Adaptive time step");
       const double dt_est = hydro.GetTimeStepEstimate(S);
       if (dt_est < dt)
       {
@@ -671,6 +716,7 @@ int main(int argc, char *argv[])
          ti--; continue;
       }
       else if (dt_est > 1.25 * dt) { dt *= 1.02; }
+      CALI_MARK_END("Adaptive time step");
 
       // Ensure the sub-vectors x_gf, v_gf, and e_gf know the location of the
       // data in S. This operation simply updates the Memory validity flags of
@@ -684,6 +730,7 @@ int main(int argc, char *argv[])
       // and the oper object might have redirected the mesh positions to those.
       pmesh->NewNodes(x_gf, false);
 
+      CALI_MARK_BEGIN("Report/Visualization");
       if (last_step || (ti % vis_steps) == 0)
       {
          double lnorm = e_gf * e_gf, norm;
@@ -798,7 +845,9 @@ int main(int argc, char *argv[])
          MFEM_VERIFY(dim==2 || dim==3, "check: dimension");
          Checks(ti, e_norm, checks);
       }
+      CALI_MARK_END("Report/Visualization");
    }
+   CALI_MARK_END("Time step loop");
    MFEM_VERIFY(!check || checks == 2, "Check error!");
 
    switch (ode_solver_type)
@@ -857,6 +906,16 @@ int main(int argc, char *argv[])
    // Free the used memory.
    delete ode_solver;
    delete pmesh;
+
+   CALI_MARK_END("Simulation");
+
+#ifdef USE_CALIPER
+   if (caliper)
+   {
+      cali_mgr->flush();
+      delete cali_mgr;
+   }
+#endif
 
    return 0;
 }
