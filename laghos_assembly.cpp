@@ -15,6 +15,9 @@
 // testbed platforms, in support of the nation's exascale computing imperative.
 
 #include "laghos_assembly.hpp"
+#ifdef USE_CALIPER
+#include "caliper/cali.h"
+#endif
 #include <unordered_map>
 
 namespace mfem
@@ -27,6 +30,8 @@ void DensityIntegrator::AssembleRHSElementVect(const FiniteElement &fe,
                                                ElementTransformation &Tr,
                                                Vector &elvect)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    const int nqp = IntRule->GetNPoints();
    Vector shape(fe.GetDof());
    elvect.SetSize(fe.GetDof());
@@ -45,6 +50,8 @@ void ForceIntegrator::AssembleElementMatrix2(const FiniteElement &trial_fe,
                                              ElementTransformation &Tr,
                                              DenseMatrix &elmat)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    const int e = Tr.ElementNo;
    const int nqp = IntRule->GetNPoints();
    const int dim = trial_fe.GetDim();
@@ -89,6 +96,8 @@ MassPAOperator::MassPAOperator(ParFiniteElementSpace &pfes,
    ess_tdofs_count(0),
    ess_tdofs(0)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    pabf.SetAssemblyLevel(AssemblyLevel::PARTIAL);
    pabf.AddDomainIntegrator(new mfem::MassIntegrator(Q, &ir));
    pabf.Assemble();
@@ -97,6 +106,8 @@ MassPAOperator::MassPAOperator(ParFiniteElementSpace &pfes,
 
 void MassPAOperator::SetEssentialTrueDofs(Array<int> &dofs)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    ess_tdofs_count = dofs.Size();
    if (ess_tdofs.Size() == 0)
    {
@@ -111,11 +122,15 @@ void MassPAOperator::SetEssentialTrueDofs(Array<int> &dofs)
 
 void MassPAOperator::EliminateRHS(Vector &b) const
 {
+   CALI_CXX_MARK_FUNCTION;
+
    if (ess_tdofs_count > 0) { b.SetSubVector(ess_tdofs, 0.0); }
 }
 
 void MassPAOperator::Mult(const Vector &x, Vector &y) const
 {
+   CALI_CXX_MARK_FUNCTION;
+
    mass->Mult(x, y);
    if (ess_tdofs_count > 0) { y.SetSubVector(ess_tdofs, 0.0); }
 }
@@ -150,6 +165,8 @@ void ForceMult2D(const int NE,
                  const DenseTensor &sJit_,
                  const Vector &x, Vector &y)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    auto b = Reshape(B_.Read(), Q1D, L1D);
    auto bt = Reshape(Bt_.Read(), D1D, Q1D);
    auto gt = Reshape(Gt_.Read(), D1D, Q1D);
@@ -301,6 +318,8 @@ void ForceMult3D(const int NE,
                  const DenseTensor &sJit_,
                  const Vector &x, Vector &y)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    auto b = Reshape(B_.Read(), Q1D, L1D);
    auto bt = Reshape(Bt_.Read(), D1D, Q1D);
    auto gt = Reshape(Gt_.Read(), D1D, Q1D);
@@ -529,6 +548,8 @@ static void ForceMult(const int DIM, const int D1D, const int Q1D,
                       const Vector &e,
                       Vector &v)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    MFEM_VERIFY(D1D==H1D, "D1D!=H1D");
    MFEM_VERIFY(L1D==D1D-1,"L1D!=D1D-1");
    const int id = ((DIM)<<8)|(D1D)<<4|(Q1D);
@@ -555,6 +576,8 @@ static void ForceMult(const int DIM, const int D1D, const int Q1D,
 
 void ForcePAOperator::Mult(const Vector &x, Vector &y) const
 {
+   CALI_CXX_MARK_FUNCTION;
+
    if (L2R) { L2R->Mult(x, X); }
    else { X = x; }
    ForceMult(dim, D1D, Q1D, L1D, D1D, NE,
@@ -571,6 +594,8 @@ void ForceMultTranspose2D(const int NE,
                           const DenseTensor &sJit_,
                           const Vector &x, Vector &y)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    auto b = Reshape(B_.Read(), Q1D, D1D);
    auto g = Reshape(G_.Read(), Q1D, D1D);
    auto bt = Reshape(Bt_.Read(), L1D, Q1D);
@@ -720,6 +745,8 @@ void ForceMultTranspose3D(const int NE,
                           const Vector &v_,
                           Vector &e_)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    auto b = Reshape(B_.Read(), Q1D, D1D);
    auto g = Reshape(G_.Read(), Q1D, D1D);
    auto bt = Reshape(Bt_.Read(), L1D, Q1D);
@@ -938,6 +965,8 @@ static void ForceMultTranspose(const int DIM, const int D1D, const int Q1D,
                                const Vector &v,
                                Vector &e)
 {
+   CALI_CXX_MARK_FUNCTION;
+
    // DIM, D1D, Q1D, L1D(=D1D-1)
    MFEM_VERIFY(L1D==D1D-1, "L1D!=D1D-1");
    const int id = ((DIM)<<8)|(D1D)<<4|(Q1D);
@@ -962,6 +991,8 @@ static void ForceMultTranspose(const int DIM, const int D1D, const int Q1D,
 
 void ForcePAOperator::MultTranspose(const Vector &x, Vector &y) const
 {
+   CALI_CXX_MARK_FUNCTION;
+
    H1R->Mult(x, Y);
    ForceMultTranspose(dim, D1D, Q1D, L1D, NE,
                       L2D2Q->Bt, H1D2Q->B, H1D2Q->G,

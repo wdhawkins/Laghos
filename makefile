@@ -70,6 +70,17 @@ ifeq ($(wildcard $(CONFIG_MK)),)
 endif
 TEST_MK = $(MFEM_TEST_MK)
 
+# Caliper install directory
+CALIPER_DIR := "../caliper"
+CALIPER_INCLUDE :=
+CALIPER_LIBS :=
+CALIPER_FLAGS :=
+ifeq ($(wildcard $(CALIPER_DIR)/.),)
+   CALIPER_INCLUDE := -I ../caliper/include
+   CALIPER_LIBS := -L ../caliper/lib64 -lcaliper -Wl,-rpath,../caliper/lib64
+   CALIPER_FLAGS := -DUSE_CALIPER
+endif
+
 # Use the compiler used by MFEM. Get the compiler and the options for compiling
 # and linking from MFEM's config.mk. (Skip this if the target does not require
 # building.)
@@ -86,13 +97,13 @@ endif
 
 CXX = $(MFEM_CXX)
 CPPFLAGS = $(MFEM_CPPFLAGS)
-CXXFLAGS = $(MFEM_CXXFLAGS)
+CXXFLAGS = $(MFEM_CXXFLAGS) $(CALIPER_INCLUDE) $(CALIPER_FLAGS)
 LAGHOS_FLAGS = $(CPPFLAGS) $(CXXFLAGS) $(MFEM_INCFLAGS)
 # Extra include dir, needed for now to include headers like "general/forall.hpp"
 EXTRA_INC_DIR = $(or $(wildcard $(MFEM_DIR)/include/mfem),$(MFEM_DIR))
 CCC = $(strip $(CXX) $(LAGHOS_FLAGS) $(if $(EXTRA_INC_DIR),-I$(EXTRA_INC_DIR)))
 
-LAGHOS_LIBS = $(MFEM_LIBS) $(MFEM_EXT_LIBS)
+LAGHOS_LIBS = $(MFEM_LIBS) $(MFEM_EXT_LIBS) $(CALIPER_LIBS)
 LIBS = $(strip $(LAGHOS_LIBS) $(LDFLAGS))
 
 SOURCE_FILES = $(sort $(wildcard *.cpp))
