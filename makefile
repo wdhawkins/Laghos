@@ -70,12 +70,14 @@ ifeq ($(wildcard $(CONFIG_MK)),)
 endif
 TEST_MK = $(MFEM_TEST_MK)
 
+
 # Caliper install directory
-CALIPER_DIR ?= "../caliper"
-CALIPER_INCLUDE :=
-CALIPER_LIBS :=
-CALIPER_FLAGS :=
-ifeq ($(wildcard $(CALIPER_DIR)/.),)
+CALIPER_DIR ?= ../caliper
+ifeq ($(wildcard $(CALIPER_DIR)),)
+   CALIPER_INCLUDE :=
+   CALIPER_LIBS :=
+   CALIPER_FLAGS :=
+else
    CALIPER_INCLUDE := -I $(CALIPER_DIR)/include
    CALIPER_LIBS := -L $(CALIPER_DIR)/lib64 -lcaliper -Wl,-rpath,$(CALIPER_DIR)/lib64
    CALIPER_FLAGS := -DUSE_CALIPER
