@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
    double blast_position[] = {0.0, 0.0, 0.0};
 #ifdef USE_CALIPER
    bool caliper = false;
-   const char *caliper_config = "runtime-report";
+   const char *caliper_config = "runtime-report(calc.inclusive=true)";
 #endif
 
    OptionsParser args(argc, argv);
