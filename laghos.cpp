@@ -236,9 +236,12 @@ int main(int argc, char *argv[])
    }
 #endif
 
+#ifdef USE_CALIPER
    CALI_MARK_BEGIN("Simulation");
 
    CALI_MARK_BEGIN("Setup");
+#endif
+
    // Configure the device from the command line options
    Device backend;
    backend.Configure(device, dev);
@@ -393,7 +396,9 @@ int main(int argc, char *argv[])
             cout << "Unknown partition type: " << partition_type << '\n';
          }
          delete mesh;
+#ifdef USE_CALIPER
          delete cali_mgr;
+#endif
          MPI_Finalize();
          return 3;
    }
@@ -487,7 +492,9 @@ int main(int argc, char *argv[])
             cout << "Unknown ODE solver type: " << ode_solver_type << '\n';
          }
          delete pmesh;
+#ifdef USE_CALIPER
          delete cali_mgr;
+#endif
          MPI_Finalize();
          return 3;
    }
@@ -599,7 +606,9 @@ int main(int argc, char *argv[])
                                                 visc, vorticity, p_assembly,
                                                 cg_tol, cg_max_iter, ftz_tol,
                                                 order_q);
+#ifdef USE_CALIPER
    CALI_MARK_END("Setup");
+#endif
 
    socketstream vis_rho, vis_v, vis_e;
    char vishost[] = "localhost";
@@ -678,7 +687,12 @@ int main(int argc, char *argv[])
    //      }
    //      cout << endl;
    //   }
+   //
+
+#ifdef USE_CALIPER
    CALI_MARK_BEGIN("Time step loop");
+#endif
+
    for (int ti = 1; !last_step; ti++)
    {
       if (t + dt >= t_final)
@@ -841,7 +855,11 @@ int main(int argc, char *argv[])
          Checks(ti, e_norm, checks);
       }
    }
+
+#ifdef USE_CALIPER
    CALI_MARK_END("Time step loop");
+#endif
+
    MFEM_VERIFY(!check || checks == 2, "Check error!");
 
    switch (ode_solver_type)
@@ -901,7 +919,9 @@ int main(int argc, char *argv[])
    delete ode_solver;
    delete pmesh;
 
+#ifdef USE_CALIPER
    CALI_MARK_END("Simulation");
+#endif
 
 #ifdef USE_CALIPER
    if (caliper)

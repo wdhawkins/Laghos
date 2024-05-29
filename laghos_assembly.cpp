@@ -48,7 +48,9 @@ void ForceIntegrator::AssembleElementMatrix2(const FiniteElement &trial_fe,
                                              ElementTransformation &Tr,
                                              DenseMatrix &elmat)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    const int e = Tr.ElementNo;
    const int nqp = IntRule->GetNPoints();
@@ -155,7 +157,9 @@ void ForceMult2D(const int NE,
                  const DenseTensor &sJit_,
                  const Vector &x, Vector &y)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    auto b = Reshape(B_.Read(), Q1D, L1D);
    auto bt = Reshape(Bt_.Read(), D1D, Q1D);
@@ -308,7 +312,9 @@ void ForceMult3D(const int NE,
                  const DenseTensor &sJit_,
                  const Vector &x, Vector &y)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    auto b = Reshape(B_.Read(), Q1D, L1D);
    auto bt = Reshape(Bt_.Read(), D1D, Q1D);
@@ -538,7 +544,9 @@ static void ForceMult(const int DIM, const int D1D, const int Q1D,
                       const Vector &e,
                       Vector &v)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    MFEM_VERIFY(D1D==H1D, "D1D!=H1D");
    MFEM_VERIFY(L1D==D1D-1,"L1D!=D1D-1");
@@ -566,7 +574,9 @@ static void ForceMult(const int DIM, const int D1D, const int Q1D,
 
 void ForcePAOperator::Mult(const Vector &x, Vector &y) const
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    if (L2R) { L2R->Mult(x, X); }
    else { X = x; }
@@ -584,7 +594,9 @@ void ForceMultTranspose2D(const int NE,
                           const DenseTensor &sJit_,
                           const Vector &x, Vector &y)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    auto b = Reshape(B_.Read(), Q1D, D1D);
    auto g = Reshape(G_.Read(), Q1D, D1D);
@@ -735,7 +747,9 @@ void ForceMultTranspose3D(const int NE,
                           const Vector &v_,
                           Vector &e_)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    auto b = Reshape(B_.Read(), Q1D, D1D);
    auto g = Reshape(G_.Read(), Q1D, D1D);
@@ -955,7 +969,9 @@ static void ForceMultTranspose(const int DIM, const int D1D, const int Q1D,
                                const Vector &v,
                                Vector &e)
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    // DIM, D1D, Q1D, L1D(=D1D-1)
    MFEM_VERIFY(L1D==D1D-1, "L1D!=D1D-1");
@@ -981,7 +997,9 @@ static void ForceMultTranspose(const int DIM, const int D1D, const int Q1D,
 
 void ForcePAOperator::MultTranspose(const Vector &x, Vector &y) const
 {
+#ifdef USE_CALIPER
    CALI_CXX_MARK_FUNCTION;
+#endif
 
    H1R->Mult(x, Y);
    ForceMultTranspose(dim, D1D, Q1D, L1D, NE,
