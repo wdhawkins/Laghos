@@ -64,8 +64,7 @@
 #include <sys/resource.h>
 #include "laghos_solver.hpp"
 #ifdef USE_CALIPER
-#include "caliper/cali-manager.h"
-#include "caliper/cali.h"
+#include <caliper/cali.h>
 #endif
 
 using std::cout;
@@ -91,6 +90,11 @@ int main(int argc, char *argv[])
    Mpi::Init();
    int myid = Mpi::WorldRank();
    Hypre::Init();
+
+#ifdef USE_CALIPER
+   cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
+   CALI_CXX_MARK_FUNCTION;
+#endif 
 
    // Print the banner.
    if (Mpi::Root()) { display_banner(cout); }
@@ -128,10 +132,6 @@ int main(int argc, char *argv[])
    int dev = 0;
    double blast_energy = 0.25;
    double blast_position[] = {0.0, 0.0, 0.0};
-#ifdef USE_CALIPER
-   bool caliper = false;
-   const char *caliper_config = "runtime-report(calc.inclusive=true)";
-#endif
 
    OptionsParser args(argc, argv);
    args.AddOption(&dim, "-dim", "--dimension", "Dimension of the problem.");
@@ -201,12 +201,6 @@ int main(int argc, char *argv[])
    args.AddOption(&gpu_aware_mpi, "-gam", "--gpu-aware-mpi", "-no-gam",
                   "--no-gpu-aware-mpi", "Enable GPU aware MPI communications.");
    args.AddOption(&dev, "-dev", "--dev", "GPU device to use.");
-#ifdef USE_CALIPER
-   args.AddOption(&caliper, "-caliper", "--caliper", "-no-caliper", "--no-caliper",
-                  "Enable or disable Caliper measurement and reporting.");
-   args.AddOption(&caliper_config, "-caliper-config", "--caliper-config",
-                  "User-supplied Caliper configuration");
-#endif
    args.Parse();
    if (!args.Good())
    {
@@ -214,33 +208,6 @@ int main(int argc, char *argv[])
       return 1;
    }
    if (Mpi::Root()) { args.PrintOptions(cout); }
-
-#ifdef USE_CALIPER
-   // Configure Caliper from the command line options
-   cali::ConfigManager *cali_mgr = nullptr;
-   if (caliper)
-   {
-      cali_mgr = new cali::ConfigManager;
-      cali_mgr->add(caliper_config);
-      if (cali_mgr->error())
-      {
-         if (Mpi::Root())
-         {
-           cout << "Invalid Caliper configuration: " << caliper_config << '\n';
-         }
-         delete cali_mgr;
-         MPI_Finalize();
-         return 3;
-      }
-      cali_mgr->start(); 
-   }
-#endif
-
-#ifdef USE_CALIPER
-   CALI_MARK_BEGIN("Simulation");
-
-   CALI_MARK_BEGIN("Setup");
-#endif
 
    // Configure the device from the command line options
    Device backend;
@@ -396,9 +363,6 @@ int main(int argc, char *argv[])
             cout << "Unknown partition type: " << partition_type << '\n';
          }
          delete mesh;
-#ifdef USE_CALIPER
-         delete cali_mgr;
-#endif
          MPI_Finalize();
          return 3;
    }
@@ -492,9 +456,6 @@ int main(int argc, char *argv[])
             cout << "Unknown ODE solver type: " << ode_solver_type << '\n';
          }
          delete pmesh;
-#ifdef USE_CALIPER
-         delete cali_mgr;
-#endif
          MPI_Finalize();
          return 3;
    }
@@ -606,9 +567,6 @@ int main(int argc, char *argv[])
                                                 visc, vorticity, p_assembly,
                                                 cg_tol, cg_max_iter, ftz_tol,
                                                 order_q);
-#ifdef USE_CALIPER
-   CALI_MARK_END("Setup");
-#endif
 
    socketstream vis_rho, vis_v, vis_e;
    char vishost[] = "localhost";
@@ -690,11 +648,13 @@ int main(int argc, char *argv[])
    //
 
 #ifdef USE_CALIPER
-   CALI_MARK_BEGIN("Time step loop");
+   CALI_CXX_MARK_LOOP_BEGIN(mainloop_annotation, "timestep loop");
 #endif
-
    for (int ti = 1; !last_step; ti++)
    {
+#ifdef USE_CALIPER
+      CALI_CXX_MARK_LOOP_ITERATION(mainloop_annotation, static_cast<int>(ti));
+#endif
       if (t + dt >= t_final)
       {
          dt = t_final - t;
@@ -855,9 +815,8 @@ int main(int argc, char *argv[])
          Checks(ti, e_norm, checks);
       }
    }
-
 #ifdef USE_CALIPER
-   CALI_MARK_END("Time step loop");
+  CALI_CXX_MARK_LOOP_END(mainloop_annotation);
 #endif
 
    MFEM_VERIFY(!check || checks == 2, "Check error!");
@@ -918,18 +877,6 @@ int main(int argc, char *argv[])
    // Free the used memory.
    delete ode_solver;
    delete pmesh;
-
-#ifdef USE_CALIPER
-   CALI_MARK_END("Simulation");
-#endif
-
-#ifdef USE_CALIPER
-   if (caliper)
-   {
-      cali_mgr->flush();
-      delete cali_mgr;
-   }
-#endif
 
    return 0;
 }

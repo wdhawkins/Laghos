@@ -18,9 +18,6 @@
 #include "laghos_solver.hpp"
 #include "linalg/kernels.hpp"
 #include <unordered_map>
-#ifdef USE_CALIPER
-#include "caliper/cali.h"
-#endif
 
 #ifdef MFEM_USE_MPI
 
@@ -34,10 +31,6 @@ void VisualizeField(socketstream &sock, const char *vishost, int visport,
                     ParGridFunction &gf, const char *title,
                     int x, int y, int w, int h, bool vec)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    gf.HostRead();
    ParMesh &pmesh = *gf.ParFESpace()->GetParMesh();
    MPI_Comm comm = pmesh.GetComm();
@@ -157,10 +150,6 @@ LagrangianHydroOperator::LagrangianHydroOperator(const int size,
    rhs_c_gf(&H1c),
    dvc_gf(&H1c)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    block_offsets[0] = 0;
    block_offsets[1] = block_offsets[0] + H1Vsize;
    block_offsets[2] = block_offsets[1] + H1Vsize;
@@ -305,10 +294,6 @@ LagrangianHydroOperator::~LagrangianHydroOperator()
 
 void LagrangianHydroOperator::Mult(const Vector &S, Vector &dS_dt) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    // Make sure that the mesh positions correspond to the ones in S. This is
    // needed only because some mfem time integrators don't update the solution
    // vector at every intermediate stage (hence they don't change the mesh).
@@ -331,10 +316,6 @@ void LagrangianHydroOperator::Mult(const Vector &S, Vector &dS_dt) const
 void LagrangianHydroOperator::SolveVelocity(const Vector &S,
                                             Vector &dS_dt) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    UpdateQuadratureData(S);
    AssembleForceMatrix();
    // The monolithic BlockVector stores the unknown fields as follows:
@@ -432,10 +413,6 @@ void LagrangianHydroOperator::SolveVelocity(const Vector &S,
 void LagrangianHydroOperator::SolveEnergy(const Vector &S, const Vector &v,
                                           Vector &dS_dt) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    UpdateQuadratureData(S);
    AssembleForceMatrix();
 
@@ -519,10 +496,6 @@ void LagrangianHydroOperator::ResetTimeStepEstimate() const
 
 void LagrangianHydroOperator::ComputeDensity(ParGridFunction &rho) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    rho.SetSpace(&L2);
    DenseMatrix Mrho(l2dofs_cnt);
    Vector rhs(l2dofs_cnt), rho_z(l2dofs_cnt);
@@ -549,10 +522,6 @@ double ComputeVolumeIntegral(const ParFiniteElementSpace &pfes,
                              const int Q1D, const int VDIM, const double norm,
                              const Vector& mass, const Vector& f)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    MFEM_VERIFY(pfes.GetNE() > 0, "Empty local mesh should have been handled!");
    MFEM_VERIFY(DIM==1 || DIM==2 || DIM==3, "Unsuported dimension!");
    const bool use_tensors = UsesTensorBasis(pfes);
@@ -625,10 +594,6 @@ double ComputeVolumeIntegral(const ParFiniteElementSpace &pfes,
 }
 double LagrangianHydroOperator::InternalEnergy(const ParGridFunction &gf) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    double glob_ie = 0.0, internal_energy = 0.0;
 
    if (L2.GetNE() > 0) // UsesTensorBasis does not handle empty local mesh
@@ -658,10 +623,6 @@ double LagrangianHydroOperator::InternalEnergy(const ParGridFunction &gf) const
 
 double LagrangianHydroOperator::KineticEnergy(const ParGridFunction &v) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    double glob_ke = 0.0, kinetic_energy = 0.0;
 
    if (H1.GetNE() > 0) // UsesTensorBasis does not handle empty local mesh
@@ -693,10 +654,6 @@ double LagrangianHydroOperator::KineticEnergy(const ParGridFunction &v) const
 void LagrangianHydroOperator::PrintTimingData(bool IamRoot, int steps,
                                               const bool fom) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    const MPI_Comm com = H1.GetComm();
    double my_rt[5], T[5];
    my_rt[0] = timer.sw_cgH1.RealTime();
@@ -787,10 +744,6 @@ MFEM_HOST_DEVICE inline double smooth_step_01(double x, double eps)
 
 void LagrangianHydroOperator::UpdateQuadratureData(const Vector &S) const
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    if (qdata_is_current) { return; }
 
    qdata_is_current = true;
@@ -980,10 +933,6 @@ MFEM_HOST_DEVICE static inline
 void SFNorm(double &scale_factor, double &scaled_fnorm2,
             const T * __restrict__ data)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    int i;
    constexpr int hw = H * W;
    T max_norm = 0.0, entry, fnorm2;
@@ -1052,10 +1001,6 @@ void QUpdateBody(const int NE, const int e,
                  double *d_dt_est,
                  double *d_stressJinvT)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    constexpr int DIM2 = DIM*DIM;
    double min_detJ = infinity;
 
@@ -1164,10 +1109,6 @@ static void Rho0DetJ0Vol(const int dim, const int NE,
                          QuadratureData &qdata,
                          double &volume)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    const int NQ = ir.GetNPoints();
    const int Q1D = IntRules.Get(Geometry::SEGMENT,ir.GetOrder()).GetNPoints();
    const int flags = GeometricFactors::JACOBIANS|GeometricFactors::DETERMINANTS;
@@ -1271,10 +1212,6 @@ void QKernel(const int NE, const int NQ,
              Vector &dt_est,
              DenseTensor &stressJinvT)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    constexpr int DIM2 = DIM*DIM;
    const auto d_gamma = gamma_gf.Read();
    const auto d_weights = weights.Read();
@@ -1350,10 +1287,6 @@ void QKernel(const int NE, const int NQ,
 
 void QUpdate::UpdateQuadratureData(const Vector &S, QuadratureData &qdata)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    timer->sw_qdata.Start();
    Vector* S_p = const_cast<Vector*>(&S);
    const int H1_size = H1.GetVSize();
@@ -1438,10 +1371,6 @@ void RK2AvgSolver::Init(TimeDependentOperator &tdop)
 
 void RK2AvgSolver::Step(Vector &S, double &t, double &dt)
 {
-#ifdef USE_CALIPER
-   CALI_CXX_MARK_FUNCTION;
-#endif
-
    // The monolithic BlockVector stores the unknown fields as follows:
    // (Position, Velocity, Specific Internal Energy).
    S0.Vector::operator=(S);
