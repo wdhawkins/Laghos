@@ -65,6 +65,7 @@
 #include "laghos_solver.hpp"
 #ifdef USE_CALIPER
 #include <caliper/cali.h>
+#include <adiak.hpp>
 #endif
 
 using std::cout;
@@ -90,11 +91,6 @@ int main(int argc, char *argv[])
    Mpi::Init();
    int myid = Mpi::WorldRank();
    Hypre::Init();
-
-#ifdef USE_CALIPER
-   cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
-   CALI_CXX_MARK_FUNCTION;
-#endif 
 
    // Print the banner.
    if (Mpi::Root()) { display_banner(cout); }
@@ -208,6 +204,17 @@ int main(int argc, char *argv[])
       return 1;
    }
    if (Mpi::Root()) { args.PrintOptions(cout); }
+
+#ifdef USE_CALIPER
+   cali_config_set("CALI_CALIPER_ATTRIBUTE_DEFAULT_SCOPE", "process");
+   CALI_CXX_MARK_FUNCTION;
+
+   MPI_Comm adiak_mpi_comm = MPI_COMM_WORLD;
+   void* adiak_mpi_comm_ptr = &adiak_mpi_comm;
+   adiak::init(adiak_mpi_comm_ptr);
+   adiak::launchdate();
+   adiak::jobsize();
+#endif
 
    // Configure the device from the command line options
    Device backend;
@@ -650,7 +657,8 @@ int main(int argc, char *argv[])
 #ifdef USE_CALIPER
    CALI_CXX_MARK_LOOP_BEGIN(mainloop_annotation, "timestep loop");
 #endif
-   for (int ti = 1; !last_step; ti++)
+   int ti = 1;
+   for (; !last_step; ti++)
    {
 #ifdef USE_CALIPER
       CALI_CXX_MARK_LOOP_ITERATION(mainloop_annotation, static_cast<int>(ti));
@@ -817,6 +825,7 @@ int main(int argc, char *argv[])
    }
 #ifdef USE_CALIPER
   CALI_CXX_MARK_LOOP_END(mainloop_annotation);
+  adiak::value("steps", ti);
 #endif
 
    MFEM_VERIFY(!check || checks == 2, "Check error!");
@@ -873,6 +882,10 @@ int main(int argc, char *argv[])
       vis_v.close();
       vis_e.close();
    }
+
+#ifdef USE_CALIPER
+   adiak::fini();
+#endif
 
    // Free the used memory.
    delete ode_solver;
