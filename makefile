@@ -80,7 +80,7 @@ ifeq ($(wildcard $(CALIPER_DIR)),)
    CALIPER_FLAGS :=
 else
    CALIPER_INCLUDE := -I $(CALIPER_DIR)/include
-   CALIPER_LIBS := -L $(CALIPER_DIR)/lib64 -lcaliper -Wl,-rpath,$(CALIPER_DIR)/lib64
+   CALIPER_LIBS := -L $(CALIPER_DIR)/lib64 -lcaliper
    CALIPER_FLAGS := -DUSE_CALIPER
 endif
 
