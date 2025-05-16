@@ -55,6 +55,8 @@ make style
 
 endef
 
+-include user.mk
+
 NPROC = $(shell getconf _NPROCESSORS_ONLN)
 GOALS = help clean distclean style setup mfem metis hypre
 
@@ -100,8 +102,8 @@ endif
 MFEM_LIB_FILE = mfem_is_not_built
 ifeq (,$(filter $(GOALS),$(MAKECMDGOALS)))
    -include $(CONFIG_MK)
-   ifneq ($(realpath $(MFEM_DIR)),$(MFEM_SOURCE_DIR))
-      ifneq ($(realpath $(MFEM_DIR)),$(MFEM_INSTALL_DIR))
+   ifneq ($(realpath $(MFEM_DIR)),$(realpath $(MFEM_SOURCE_DIR)))
+      ifneq ($(realpath $(MFEM_DIR)),$(realpath $(MFEM_INSTALL_DIR)))
          MFEM_BUILD_DIR := $(MFEM_DIR)
          override MFEM_DIR := $(MFEM_SOURCE_DIR)
       endif
